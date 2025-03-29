@@ -385,22 +385,57 @@ void ArticProtocolServer::RequestHandler::Serve() {
 
             std::array<char, sizeof(req.reqPacket.method) + 1> methodArray = {0};
             memcpy(methodArray.data(), req.reqPacket.method.data(), req.reqPacket.method.size());
-            auto it = ArticFunctions::functionHandlers.find(std::string(methodArray.data()));
-            if (it == ArticFunctions::functionHandlers.end()) {
-                respPacket.resp.articResult = ArticProtocolCommon::ResponseMethod::ArticResult::METHOD_NOT_FOUND;
-                logger.Error("Worker %d: Method not found: %s", id, methodArray.data());
-                if (!Write(accept_fd, &respPacket, sizeof(respPacket))) {
-                    if (run)
-                        logger.Error("Worker %d: Error writing to socket", id);
-                    return;
-                }
-                continue;
-            }
 
-            logger.Debug("Worker %d: Processing %s (rID %d)", id, methodArray.data(), req.reqPacket.requestID);
             MethodInterface mi(req, workBuffer, workBufferSize, accept_fd);
-            it->second(mi);
+            if (strcmp(methodArray.data(), "__log") == 0) {
+                bool good = true;
+                s8 log_mode;
+                void* dataPtr; size_t dataPtrSize;
 
+                if (good) good = mi.GetParameterS8(log_mode);
+                if (good) good = mi.GetParameterBuffer(dataPtr, dataPtrSize);
+                
+                if (good) good = mi.FinishInputParameters();
+
+                if (good) {
+                    std::string str(reinterpret_cast<char*>(dataPtr), dataPtrSize);
+                    switch (static_cast<ArticProtocolCommon::LogOnServerType>(log_mode))
+                    {
+                    case ArticProtocolCommon::LogOnServerType::LOG_DEBUG:
+                        logger.Debug(str.c_str());
+                        break;
+                    case ArticProtocolCommon::LogOnServerType::LOG_INFO:
+                        logger.Info(str.c_str());
+                        break;
+                    case ArticProtocolCommon::LogOnServerType::LOG_WARNING:
+                        logger.Warning(str.c_str());
+                        break;
+                    case ArticProtocolCommon::LogOnServerType::LOG_ERROR:
+                        logger.Error(str.c_str());
+                        break;
+                    default:
+                        break;
+                    }
+
+                    mi.FinishGood(0);
+                }
+            } else {
+                auto it = ArticFunctions::functionHandlers.find(std::string(methodArray.data()));
+                if (it == ArticFunctions::functionHandlers.end()) {
+                    respPacket.resp.articResult = ArticProtocolCommon::ResponseMethod::ArticResult::METHOD_NOT_FOUND;
+                    logger.Error("Worker %d: Method not found: %s", id, methodArray.data());
+                    if (!Write(accept_fd, &respPacket, sizeof(respPacket))) {
+                        if (run)
+                            logger.Error("Worker %d: Error writing to socket", id);
+                        return;
+                    }
+                    continue;
+                }
+
+                logger.Debug("Worker %d: Processing %s (rID %d)", id, methodArray.data(), req.reqPacket.requestID);
+                it->second(mi);
+            }
+            
             ArticProtocolCommon::MethodState mState = mi.GetMethodState();
             if (mState != ArticProtocolCommon::MethodState::FINISHED) {
                 respPacket.resp.articResult = ArticProtocolCommon::ResponseMethod::ArticResult::METHOD_ERROR;

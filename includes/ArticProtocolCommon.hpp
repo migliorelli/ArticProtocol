@@ -26,6 +26,12 @@ namespace ArticProtocolCommon {
         IN_SMALL_BUFFER = 4,
         IN_BIG_BUFFER = 5,
     };
+    enum class LogOnServerType : u8 {
+        LOG_DEBUG = 0,
+        LOG_INFO = 1,
+        LOG_WARNING = 2,
+        LOG_ERROR = 3,
+    };
     struct RequestParameter {
         RequestParameterType type;
         union {
