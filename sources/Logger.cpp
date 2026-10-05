@@ -176,6 +176,12 @@ void Logger::Handler() {
                 printf("[E] %s\n", log.string.c_str());
                 topScreenConsole.fg = 0;
                 break;
+            case PendingLog::Type::BATTERY:
+                back = bottomScreenConsole.cursorY;
+                bottomScreenConsole.cursorY = 24;
+                printf("%s", log.string.c_str());
+                bottomScreenConsole.cursorY = back;
+                break;
             case PendingLog::Type::TRAFFIC:
                 back = bottomScreenConsole.cursorY;
                 bottomScreenConsole.cursorY = 25;
