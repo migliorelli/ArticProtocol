@@ -17,6 +17,7 @@ public:
     void Warning(const char* fmt, ...);
     void Error(const char* fmt, ...);
     void Traffic(const char* fmt, ...);
+    void Battery(const char* fmt, ...);
 
     void Wait();
 
@@ -30,6 +31,7 @@ private:
             WARNING,
             ERROR,
             TRAFFIC,
+            BATTERY,
         };
         Type type;
         bool isTopScr = true;

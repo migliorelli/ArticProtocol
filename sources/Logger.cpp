@@ -113,6 +113,20 @@ void Logger::Traffic(const char* fmt, ...) {
     LightEvent_Signal(&event);
 }
 
+void Logger::Battery(const char* fmt, ...) {
+    va_list valist;
+    char buffer[256];
+    va_start(valist, fmt);
+    int ret = vsnprintf(buffer, 255, fmt, valist);
+    va_end(valist);
+    if (ret >= 0) buffer[ret] = '\0';
+    {
+        CTRPluginFramework::Lock l(pendingLogsMutex);
+        pendingLogs.push(PendingLog{.type = PendingLog::Type::BATTERY, .isTopScr = false, .string{buffer}});
+    }
+    LightEvent_Signal(&event);
+}
+
 void Logger::Handler() {
     bool currentIsTop = true;
     int back;
